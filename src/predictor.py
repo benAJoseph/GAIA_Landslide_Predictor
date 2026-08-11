@@ -36,8 +36,8 @@ class LandslidePredictorEngine:
                 self.st_pino.load_state_dict(state_dict, strict=True)
                 self.st_pino.eval()  # Set eval mode to avoid BatchNorm single-sample error
                 logging.info("Successfully loaded ST-PINO model weights.")
-            except Exception as e:
-                logging.warning(f"Could not load ST-PINO model weights: {e}")
+            except (torch.PyTorchError, RuntimeError, OSError, KeyError, ValueError, AttributeError) as e:
+                logging.warning(f"[{type(e).__name__}] Could not load ST-PINO model weights: {e}")
 
         # Load Random Forest
         rf_path = os.path.join(self.model_dir, "random_forest_model.joblib")
@@ -48,8 +48,8 @@ class LandslidePredictorEngine:
                 if os.path.exists(rf_enc_path):
                     self.rf_encoders = joblib.load(rf_enc_path)
                 logging.info("Successfully loaded Random Forest model.")
-            except Exception as e:
-                logging.warning(f"Could not load Random Forest model: {e}")
+            except (OSError, RuntimeError, ValueError, KeyError, AttributeError) as e:
+                logging.warning(f"[{type(e).__name__}] Could not load Random Forest model: {e}")
 
         # Load XGBoost
         xgb_path = os.path.join(self.model_dir, "xgboost_model.json")
@@ -61,8 +61,8 @@ class LandslidePredictorEngine:
                 if os.path.exists(xgb_enc_path):
                     self.xgb_encoders = joblib.load(xgb_enc_path)
                 logging.info("Successfully loaded XGBoost model.")
-            except Exception as e:
-                logging.warning(f"Could not load XGBoost model: {e}")
+            except (xgb.core.XGBoostError, OSError, RuntimeError, ValueError, KeyError, AttributeError) as e:
+                logging.warning(f"[{type(e).__name__}] Could not load XGBoost model: {e}")
 
     def compute_factor_of_safety(self, cohesion: float, slope_angle: float, soil_moisture: float, gamma_h: float = 90.0, phi_deg: float = 30.0) -> float:
         """
@@ -131,8 +131,8 @@ class LandslidePredictorEngine:
                 probs = torch.softmax(logits, dim=1)
                 landslide_prob = probs[0, 1].item()
                 return float(landslide_prob), float(fos_tensor)
-        except Exception as e:
-            logging.error(f"ST-PINO prediction error: {e}")
+        except (RuntimeError, ValueError, TypeError, KeyError, AttributeError) as e:
+            logging.error(f"[{type(e).__name__}] ST-PINO prediction error: {e}")
             prob = 0.85 if fos_calc < 1.0 else 0.10
             return prob, fos_calc
 
@@ -160,8 +160,8 @@ class LandslidePredictorEngine:
             ]
             prob = self.rf_model.predict_proba([features])[0][1]
             return float(prob)
-        except Exception as e:
-            logging.error(f"Random Forest prediction error: {e}")
+        except (ValueError, TypeError, KeyError, AttributeError, IndexError) as e:
+            logging.error(f"[{type(e).__name__}] Random Forest prediction error: {e}")
             return 0.5
 
     def predict_xgb(self, data: Dict[str, Any]) -> float:
@@ -191,6 +191,6 @@ class LandslidePredictorEngine:
             dmat = xgb.DMatrix([features])
             prob = self.xgb_model.predict(dmat)[0]
             return float(prob)
-        except Exception as e:
-            logging.error(f"XGBoost prediction error: {e}")
+        except (xgb.core.XGBoostError, ValueError, TypeError, KeyError, AttributeError, IndexError) as e:
+            logging.error(f"[{type(e).__name__}] XGBoost prediction error: {e}")
             return 0.5

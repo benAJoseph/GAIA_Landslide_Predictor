@@ -381,8 +381,9 @@ st.markdown(
     "</div>",
     unsafe_allow_html=True
 )
+fos_interp = "⚠️ **Slope failure imminent ($FOS < 1.0$)**. Driving shear force exceeds resisting shear strength." if fos_val < 1.0 else "✅ **Slope is in equilibrium ($FOS \\ge 1.0$)**. Resisting shear strength satisfies physical stability threshold."
 st.markdown(
     f"- **Computed $FOS$ Value:** `{fos_val:.3f}`\n"
-    f"- **Interpretation:** {'⚠️ **Slope failure imminent ($FOS < 1.0$)**. Driving shear force exceeds resisting shear strength.' if fos_val < 1.0 else '✅ **Slope is in equilibrium ($FOS \\ge 1.0$)**. Resisting shear strength satisfies physical stability threshold.'}"
+    f"- **Interpretation:** {fos_interp}"
 )
 st.markdown("</div>", unsafe_allow_html=True)

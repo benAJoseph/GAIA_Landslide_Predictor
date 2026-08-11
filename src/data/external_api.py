@@ -17,8 +17,8 @@ def get_lat_lon(location_name: str) -> Tuple[Optional[float], Optional[float]]:
         data = response.json()
         if data:
             return float(data[0]["lat"]), float(data[0]["lon"])
-    except Exception as e:
-        logging.warning(f"Geocoding error for '{location_name}': {e}")
+    except (requests.RequestException, json.JSONDecodeError, KeyError, ValueError, IndexError) as e:
+        logging.warning(f"[{type(e).__name__}] Geocoding error for '{location_name}': {e}")
     return None, None
 
 def get_daily_rainfall(lat: float, lon: float, date_str: str) -> Dict[str, float]:
@@ -37,13 +37,13 @@ def get_daily_rainfall(lat: float, lon: float, date_str: str) -> Dict[str, float
             "timezone": "auto"
         }
         resp = requests.get(url, params=params, timeout=5)
-        if resp.status_code == 200:
-            rain_sums = resp.json().get("daily", {}).get("rain_sum", [])
-            recent_rain = float(rain_sums[-1]) if rain_sums else 15.0
-            sum_7d = float(np.sum(rain_sums)) if rain_sums else 50.0
-            return {"recent": recent_rain, "sum_7d": sum_7d}
-    except Exception as e:
-        logging.warning(f"Rainfall API error for ({lat}, {lon}): {e}")
+        resp.raise_for_status()
+        rain_sums = resp.json().get("daily", {}).get("rain_sum", [])
+        recent_rain = float(rain_sums[-1]) if rain_sums else 15.0
+        sum_7d = float(np.sum(rain_sums)) if rain_sums else 50.0
+        return {"recent": recent_rain, "sum_7d": sum_7d}
+    except (requests.RequestException, json.JSONDecodeError, KeyError, ValueError, IndexError) as e:
+        logging.warning(f"[{type(e).__name__}] Rainfall API error for ({lat}, {lon}): {e}")
     return {"recent": 25.0, "sum_7d": 120.0}
 
 def calculate_rainfall_anomaly(lat: float, lon: float, date_str: str) -> Dict[str, float]:
@@ -76,16 +76,16 @@ def get_hourly_soil_moisture(lat: float, lon: float, date_str: str) -> Dict[str,
             "timezone": "auto"
         }
         resp = requests.get(url, params=params, timeout=5)
-        if resp.status_code == 200:
-            moisture_vals = resp.json().get("hourly", {}).get("soil_moisture_0_to_7cm", [])
-            valid_vals = [v for v in moisture_vals if v is not None]
-            if valid_vals:
-                recent = float(valid_vals[-1])
-                trend = float(valid_vals[-1] - valid_vals[0])
-                max_val = float(np.max(valid_vals))
-                return {"recent": recent, "trend": trend, "max": max_val}
-    except Exception as e:
-        logging.warning(f"Soil moisture API error for ({lat}, {lon}): {e}")
+        resp.raise_for_status()
+        moisture_vals = resp.json().get("hourly", {}).get("soil_moisture_0_to_7cm", [])
+        valid_vals = [v for v in moisture_vals if v is not None]
+        if valid_vals:
+            recent = float(valid_vals[-1])
+            trend = float(valid_vals[-1] - valid_vals[0])
+            max_val = float(np.max(valid_vals))
+            return {"recent": recent, "trend": trend, "max": max_val}
+    except (requests.RequestException, json.JSONDecodeError, KeyError, ValueError, IndexError) as e:
+        logging.warning(f"[{type(e).__name__}] Soil moisture API error for ({lat}, {lon}): {e}")
     return {"recent": 0.42, "trend": 0.05, "max": 0.55}
 
 def get_elevation(lat: float, lon: float) -> float:
@@ -94,12 +94,12 @@ def get_elevation(lat: float, lon: float) -> float:
     params = {"locations": f"{lat},{lon}"}
     try:
         resp = requests.get(url, params=params, timeout=5)
-        if resp.status_code == 200:
-            results = resp.json().get("results", [])
-            if results:
-                return float(results[0]["elevation"])
-    except Exception as e:
-        logging.warning(f"Elevation API error for ({lat}, {lon}): {e}")
+        resp.raise_for_status()
+        results = resp.json().get("results", [])
+        if results:
+            return float(results[0]["elevation"])
+    except (requests.RequestException, json.JSONDecodeError, KeyError, ValueError, IndexError) as e:
+        logging.warning(f"[{type(e).__name__}] Elevation API error for ({lat}, {lon}): {e}")
     # Default fallback estimation for hilly terrain
     return float(np.round(300 + abs(lat) * 20 + abs(lon) * 5, 1))
 
