@@ -41,7 +41,7 @@ $$FOS = \frac{c' + (\gamma h \cos^2\beta - u) \tan\phi'}{\gamma h \sin\beta \cos
 
 1. **Clone Repository & Navigate**:
    ```bash
-   git clone https://github.com/your-username/GAIA_Landslide_Predictor.git
+   git clone https://github.com/benAJoseph/GAIA_Landslide_Predictor.git
    cd GAIA_Landslide_Predictor
    ```
 
@@ -84,5 +84,4 @@ GAIA_Landslide_Predictor/
 
 ## 📄 Citation & Publication
 
-If you use GAIA in your research, please cite our corresponding journal paper:
-*GAIA: Spatio-Temporal Physics-Informed Neural Operator with Attention Gating for Landslide Hazard Forecasting.*
+*Coming Soon*
